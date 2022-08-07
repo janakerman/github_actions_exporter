@@ -79,6 +79,7 @@ func Test_Server_MetricsRouteAfterWorkflowJob(t *testing.T) {
 	expectedDuration := 10.0
 	jobStartedAt := time.Unix(1650308740, 0)
 	stepStartedAt := jobStartedAt.Add(time.Duration(expectedDuration) * time.Second)
+	jobNmae := "my-job"
 	runnerGroupName := "runner-group"
 
 	event := github.WorkflowJobEvent{
@@ -90,6 +91,7 @@ func Test_Server_MetricsRouteAfterWorkflowJob(t *testing.T) {
 			},
 		},
 		WorkflowJob: &github.WorkflowJob{
+			Name:      &jobNmae,
 			StartedAt: &github.Timestamp{Time: jobStartedAt},
 			Steps: []*github.TaskStep{
 				{
@@ -115,5 +117,5 @@ func Test_Server_MetricsRouteAfterWorkflowJob(t *testing.T) {
 
 	payload, err := ioutil.ReadAll(metricsRes.Body)
 	require.NoError(t, err)
-	assert.Contains(t, string(payload), `workflow_job_duration_seconds_bucket{org="someone",repo="some-repo",runner_group="runner-group",state="queued",le="10.541350399999995"} 1`)
+	assert.Contains(t, string(payload), `workflow_job_duration_seconds_count{job_name="my-job",org="someone",repo="some-repo",runner_group="runner-group",state="queued"} 1`)
 }

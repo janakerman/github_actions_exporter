@@ -133,6 +133,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEvent(t *testing
 	expectedDuration := 10.0
 	jobStartedAt := time.Unix(1650308740, 0)
 	stepStartedAt := jobStartedAt.Add(time.Duration(expectedDuration) * time.Second)
+	jobName := "my-job"
 	runnerGroupName := "runner-group"
 
 	event := github.WorkflowJobEvent{
@@ -144,6 +145,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEvent(t *testing
 			},
 		},
 		WorkflowJob: &github.WorkflowJob{
+			Name:      &jobName,
 			StartedAt: &github.Timestamp{Time: jobStartedAt},
 			Steps: []*github.TaskStep{
 				{
@@ -168,6 +170,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEvent(t *testing
 		org:         org,
 		repo:        repo,
 		state:       "queued",
+		jobName:     jobName,
 		runnerGroup: runnerGroupName,
 		seconds:     expectedDuration,
 	}, 50*time.Millisecond)
@@ -189,6 +192,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEventWithNegativ
 	expectedDuration := 10.0
 	jobStartedAt := time.Unix(1650308740, 0)
 	stepStartedAt := jobStartedAt.Add(-1 * time.Duration(expectedDuration) * time.Second)
+	jobName := "my-job"
 	runnerGroupName := "runner-group"
 
 	event := github.WorkflowJobEvent{
@@ -200,6 +204,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEventWithNegativ
 			},
 		},
 		WorkflowJob: &github.WorkflowJob{
+			Name:      &jobName,
 			StartedAt: &github.Timestamp{Time: jobStartedAt},
 			Steps: []*github.TaskStep{
 				{
@@ -224,6 +229,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobInProgressEventWithNegativ
 		org:         org,
 		repo:        repo,
 		state:       "queued",
+		jobName:     jobName,
 		runnerGroup: runnerGroupName,
 		seconds:     0,
 	}, 50*time.Millisecond)
@@ -247,6 +253,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobCompletedEvent(t *testing.
 	firstStepStartedAt := time.Unix(1650308740, 0)
 	lastStepStartedAt := firstStepStartedAt.Add(time.Duration(expectedStepTime) * time.Second)
 	lastStepFinishedAt := lastStepStartedAt.Add(time.Duration(expectedStepTime) * time.Second)
+	jobName := "my-job"
 	runnerGroupName := "runner-group"
 
 	event := github.WorkflowJobEvent{
@@ -258,6 +265,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobCompletedEvent(t *testing.
 			},
 		},
 		WorkflowJob: &github.WorkflowJob{
+			Name:      &jobName,
 			StartedAt: nil,
 			Steps: []*github.TaskStep{
 				{
@@ -285,6 +293,7 @@ func Test_GHActionExporter_HandleGHWebHook_WorkflowJobCompletedEvent(t *testing.
 		org:         org,
 		repo:        repo,
 		state:       "in_progress",
+		jobName:     jobName,
 		runnerGroup: runnerGroupName,
 		seconds:     expectedStepTime * 2,
 	}, 50*time.Millisecond)
@@ -446,8 +455,8 @@ func addValidSignatureHeader(t *testing.T, req *http.Request, payload []byte) {
 }
 
 type workflowJobObservation struct {
-	org, repo, state, runnerGroup string
-	seconds                       float64
+	org, repo, state, runnerGroup, jobName string
+	seconds                                float64
 }
 
 type workflowRunObservation struct {
@@ -471,12 +480,13 @@ func NewTestJobObserver(t *testing.T) *TestJobObserver {
 	}
 }
 
-func (o *TestJobObserver) ObserveWorkflowJobDuration(org, repo, state, runnerGroup string, seconds float64) {
+func (o *TestJobObserver) ObserveWorkflowJobDuration(org, repo, state, runnerGroup, jobName string, seconds float64) {
 	o.workFlowJobObserved <- workflowJobObservation{
 		org:         org,
 		repo:        repo,
 		state:       state,
 		runnerGroup: runnerGroup,
+		jobName:     jobName,
 		seconds:     seconds,
 	}
 }

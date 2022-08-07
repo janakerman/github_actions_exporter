@@ -27,7 +27,7 @@ var (
 		Help:    "Time that a workflow job took to reach a given state.",
 		Buckets: prometheus.ExponentialBuckets(1, 1.4, 30),
 	},
-		[]string{"org", "repo", "state", "runner_group"},
+		[]string{"org", "repo", "state", "runner_group", "job_name"},
 	)
 
 	workflowRunHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
@@ -208,18 +208,19 @@ func (c *GHActionExporter) CollectWorkflowJobEvent(event *github.WorkflowJobEven
 	repo := event.GetRepo().GetName()
 	org := event.GetRepo().GetOwner().GetLogin()
 	runnerGroup := event.WorkflowJob.GetRunnerGroupName()
+	jobName := event.WorkflowJob.GetName()
 
 	if event.GetAction() == "in_progress" {
 		firstStep := event.WorkflowJob.Steps[0]
 		queuedSeconds := firstStep.StartedAt.Time.Sub(event.WorkflowJob.StartedAt.Time).Seconds()
-		c.JobObserver.ObserveWorkflowJobDuration(org, repo, "queued", runnerGroup, math.Max(0, queuedSeconds))
+		c.JobObserver.ObserveWorkflowJobDuration(org, repo, "queued", runnerGroup, jobName, math.Max(0, queuedSeconds))
 	}
 
 	if event.GetAction() == "completed" && event.GetWorkflowJob().GetConclusion() != "skipped" {
 		firstStepStarted := event.WorkflowJob.Steps[0].StartedAt.Time
 		lastStepCompleted := event.WorkflowJob.Steps[len(event.WorkflowJob.Steps)-1].CompletedAt.Time
 		jobSeconds := lastStepCompleted.Sub(firstStepStarted).Seconds()
-		c.JobObserver.ObserveWorkflowJobDuration(org, repo, "in_progress", runnerGroup, math.Max(0, jobSeconds))
+		c.JobObserver.ObserveWorkflowJobDuration(org, repo, "in_progress", runnerGroup, jobName, math.Max(0, jobSeconds))
 	}
 }
 
